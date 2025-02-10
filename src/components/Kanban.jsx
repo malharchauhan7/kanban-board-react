@@ -5,14 +5,14 @@ import { FaFire } from "react-icons/fa";
 
 export const Kanban = () => {
   return (
-    <div className="h-screen w-full bg-neutral-900 text-neutral-50 ">
+    <div className="min-h-screen w-full bg-neutral-900 text-neutral-50 p-4">
       <Board />
     </div>
   );
 };
 export default Kanban;
+
 const Board = () => {
-  // const [cards, setCards] = useState(DEFAULT_CARDS);
   const [cards, setCards] = useState([]);
   const [hasChecked, setHasChecked] = useState(false);
 
@@ -22,41 +22,31 @@ const Board = () => {
 
   useEffect(() => {
     const cardData = localStorage.getItem("cards");
-
     setCards(cardData ? JSON.parse(cardData) : []);
     setHasChecked(true);
   }, []);
 
   return (
-    <div className="flex h-full w-full gap-3 overflow-auto p-12 justify-center">
-      <Column
-        title="Backlog"
-        column="backlog"
-        headingColor="text-neutral-500"
-        cards={cards}
-        setCards={setCards}
-      />
-      <Column
-        title="TODO"
-        column="todo"
-        headingColor="text-yellow-200"
-        cards={cards}
-        setCards={setCards}
-      />
-      <Column
-        title="In Progress"
-        column="doing"
-        headingColor="text-blue-200"
-        cards={cards}
-        setCards={setCards}
-      />
-      <Column
-        title="Complete"
-        column="done"
-        headingColor="text-emerald-200"
-        cards={cards}
-        setCards={setCards}
-      />
+    <div className="flex flex-wrap gap-3 overflow-x-auto p-4 justify-center">
+      {["Backlog", "TODO", "In Progress", "Complete"].map((title, index) => {
+        const column = ["backlog", "todo", "doing", "done"][index];
+        const colors = [
+          "text-neutral-500",
+          "text-yellow-200",
+          "text-blue-200",
+          "text-emerald-200",
+        ];
+        return (
+          <Column
+            key={column}
+            title={title}
+            column={column}
+            headingColor={colors[index]}
+            cards={cards}
+            setCards={setCards}
+          />
+        );
+      })}
       <BurnBarrel setCards={setCards} />
     </div>
   );
@@ -71,111 +61,46 @@ const Column = ({ title, headingColor, column, cards, setCards }) => {
 
   const handleDragOver = (e) => {
     e.preventDefault();
-    highlightIndicator(e);
     setActive(true);
-  };
-
-  const highlightIndicator = (e) => {
-    const indicators = getIndicators();
-    clearHighlights(indicators);
-    const el = getNearestIndicator(e, indicators);
-    el.element.style.opacity = "1";
-  };
-
-  const clearHighlights = (els) => {
-    const indicators = els || getIndicators();
-
-    indicators.forEach((i) => {
-      i.style.opacity = "0";
-    });
-  };
-
-  const getNearestIndicator = (e, indicators) => {
-    const DISTANCE_OFFSET = 50;
-    const el = indicators.reduce(
-      (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = e.clientY - (box.top + DISTANCE_OFFSET);
-
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
-      },
-      {
-        offset: Number.NEGATIVE_INFINITY,
-        element: indicators[indicators.length - 1],
-      }
-    );
-    return el;
-  };
-
-  const getIndicators = () => {
-    return Array.from(document.querySelectorAll(`[data-column="${column}"]`));
   };
 
   const handleDragLeave = () => {
     setActive(false);
-    clearHighlights();
   };
 
   const handleDragEnd = (e) => {
     setActive(false);
-    clearHighlights();
-
     const cardId = e.dataTransfer.getData("cardId");
 
-    const indicators = getIndicators();
-    const { element } = getNearestIndicator(e, indicators);
+    let copy = [...cards];
+    let cardToTransfer = copy.find((c) => c.id === cardId);
+    if (!cardToTransfer) return;
 
-    const before = element.dataset.before || "-1";
-
-    if (before !== cardId) {
-      let copy = [...cards];
-
-      let cardToTransfer = copy.find((c) => c.id === cardId);
-      if (!cardToTransfer) return;
-
-      cardToTransfer = { ...cardToTransfer, column };
-
-      copy = copy.filter((c) => c.id !== cardId);
-
-      const moveToBack = before === "-1";
-      if (moveToBack) {
-        copy.push(cardToTransfer);
-      } else {
-        const insertAtIndex = copy.findIndex((el) => el.id === before);
-        if (insertAtIndex === undefined) return;
-
-        copy.slice(insertAtIndex, 0, cardToTransfer);
-      }
-      setCards(copy);
-    }
+    cardToTransfer = { ...cardToTransfer, column };
+    copy = copy.filter((c) => c.id !== cardId);
+    copy.push(cardToTransfer);
+    setCards(copy);
   };
 
-  const filterdCards = cards.filter((c) => c.column === column);
+  const filteredCards = cards.filter((c) => c.column === column);
 
   return (
-    <div className="w-56 shrink-0">
+    <div className="w-full sm:w-64 flex-shrink-0">
       <div className="mb-3 flex items-center justify-between">
         <h3 className={`font-medium ${headingColor}`}>{title}</h3>
-        <span className="rounded text-sm text-neutral-400">
-          {filterdCards.length}
-        </span>
+        <span className="text-sm text-neutral-400">{filteredCards.length}</span>
       </div>
       <div
         onDrop={handleDragEnd}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
-        className={`h-full w-full transition-colors ${
+        className={`min-h-[100px] w-full p-2 rounded-md transition-colors ${
           active ? "bg-neutral-800/50" : "bg-neutral-800/0"
         }`}
       >
-        {filterdCards.map((c) => {
-          return <Card key={c.id} {...c} handleDragStart={handleDragStart} />;
-        })}
-        <DropIndicator beforeId="-1" column={column} />
+        {filteredCards.map((c) => (
+          <Card key={c.id} {...c} handleDragStart={handleDragStart} />
+        ))}
         <AddCard column={column} setCards={setCards} />
       </div>
     </div>
@@ -184,28 +109,15 @@ const Column = ({ title, headingColor, column, cards, setCards }) => {
 
 const Card = ({ title, id, column, handleDragStart }) => {
   return (
-    <>
-      <DropIndicator beforeId={id} column={column} />
-      <motion.div
-        layout
-        layoutId={id}
-        draggable="true"
-        onDragStart={(e) => handleDragStart(e, { title, id, column })}
-        className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing"
-      >
-        <p className="text-sm text-neutral-100">{title}</p>
-      </motion.div>
-    </>
-  );
-};
-
-const DropIndicator = ({ beforeId, column }) => {
-  return (
-    <div
-      data-before={beforeId || "-1"}
-      data-column={column}
-      className="my-0.5 h-0.5 w-full bg-violet-400 opacity-0"
-    />
+    <motion.div
+      layout
+      layoutId={id}
+      draggable="true"
+      onDragStart={(e) => handleDragStart(e, { title, id, column })}
+      className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 my-1 text-sm active:cursor-grabbing"
+    >
+      <p className="text-neutral-100">{title}</p>
+    </motion.div>
   );
 };
 
@@ -223,9 +135,7 @@ const BurnBarrel = ({ setCards }) => {
 
   const handleDragEnd = (e) => {
     const cardId = e.dataTransfer.getData("cardId");
-
-    setCards((pv) => pv.filter((c) => c.id !== cardId));
-
+    setCards((prev) => prev.filter((c) => c.id !== cardId));
     setActive(false);
   };
 
@@ -234,10 +144,10 @@ const BurnBarrel = ({ setCards }) => {
       onDrop={handleDragEnd}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      className={`mt-10 grid h-40 w-40 shrink-0 place-content-center rounded border text-3xl
+      className={`mt-10 h-20 w-20 flex-shrink-0 flex items-center justify-center rounded border text-3xl transition-all
         ${
           active
-            ? "border-red-800 bg-red-800/20 text-red-500"
+            ? "border-red-800 bg-red-800/20 text-red-500 animate-pulse"
             : "border-neutral-500 bg-neutral-500/20 text-neutral-500"
         }`}
     >
@@ -259,7 +169,9 @@ const AddCard = ({ column, setCards }) => {
       title: text.trim(),
       id: Math.random().toString(),
     };
-    setCards((pv) => [...pv, newCard]);
+    setCards((prev) => [...prev, newCard]);
+    setText("");
+    setAdding(false);
   };
 
   return (
@@ -270,21 +182,20 @@ const AddCard = ({ column, setCards }) => {
             onChange={(e) => setText(e.target.value)}
             autoFocus
             placeholder="Add new task..."
-            className="w-full rounded border border-violet-400 bg-violet-400/20 p-3 text-sm text-neutral-50 placeholder-violet-300 focus:outline-0"
+            className="w-full rounded border border-violet-400 bg-violet-400/20 p-2 text-sm focus:outline-0"
           />
-          <div className="mt-1.5 flex items-center justify-end gap-1.5">
+          <div className="mt-2 flex justify-end gap-2">
             <button
               onClick={() => setAdding(false)}
-              className="px-3 py-1.5 text-xs text-neutral-400 transition-colors hover:text-neutral-50 cursor-pointer"
+              className="px-3 py-1 text-xs text-neutral-400 hover:text-neutral-50"
             >
               Close
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded bg-neutral-50 px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:bg-neutral-300 cursor-pointer"
+              className="flex items-center gap-2 bg-neutral-50 text-xs text-neutral-900 px-3 py-1 rounded hover:bg-neutral-300"
             >
-              <span>Add</span>
-              <FiPlus />
+              Add <FiPlus />
             </button>
           </div>
         </motion.form>
@@ -292,42 +203,11 @@ const AddCard = ({ column, setCards }) => {
         <motion.button
           layout
           onClick={() => setAdding(true)}
-          className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-400 transition-colors hover:text-neutral-50 cursor-pointer"
+          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-neutral-400 hover:text-neutral-50"
         >
-          <span>Add Card</span>
-          <FiPlus />
+          Add Card <FiPlus />
         </motion.button>
       )}
     </>
   );
 };
-
-// const DEFAULT_CARDS = [
-//   // BACKLOG
-//   { title: "Look into render bug in dashboard", id: "1", column: "backlog" },
-//   { title: "SOX compliance checklist", id: "2", column: "backlog" },
-//   { title: "[SPIKE] Migrate to Azure", id: "3", column: "backlog" },
-//   { title: "Document Notifications service", id: "4", column: "backlog" },
-//   // TODO
-//   {
-//     title: "Research DB options for new microservice",
-//     id: "5",
-//     column: "todo",
-//   },
-//   { title: "Postmortem for outage", id: "6", column: "todo" },
-//   { title: "Sync with product on Q3 roadmap", id: "7", column: "todo" },
-
-//   // DOING
-//   {
-//     title: "Refactor context providers to use Zustand",
-//     id: "8",
-//     column: "doing",
-//   },
-//   { title: "Add logging to daily CRON", id: "9", column: "doing" },
-//   // DONE
-//   {
-//     title: "Set up DD dashboards for Lambda listener",
-//     id: "10",
-//     column: "done",
-//   },
-// ];
