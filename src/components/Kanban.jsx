@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FiPlus, FiTrash } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { FaFire } from "react-icons/fa";
-
+import Linkify from "linkify-react";
 export const Kanban = () => {
   return (
     <div className="min-h-screen w-full bg-neutral-900 text-neutral-50 p-4">
@@ -116,7 +116,9 @@ const Card = ({ title, id, column, handleDragStart }) => {
       onDragStart={(e) => handleDragStart(e, { title, id, column })}
       className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 my-1 text-sm active:cursor-grabbing"
     >
-      <p className="text-neutral-100">{title}</p>
+      <Linkify>
+        <p className="text-neutral-100">{title}</p>
+      </Linkify>
     </motion.div>
   );
 };
