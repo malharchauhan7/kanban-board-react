@@ -28,25 +28,28 @@ const Board = () => {
 
   return (
     <div className="flex flex-wrap gap-3 overflow-x-auto p-4 justify-center">
-      {["Backlog", "TODO", "In Progress", "Complete"].map((title, index) => {
-        const column = ["backlog", "todo", "doing", "done"][index];
-        const colors = [
-          "text-neutral-500",
-          "text-yellow-200",
-          "text-blue-200",
-          "text-emerald-200",
-        ];
-        return (
-          <Column
-            key={column}
-            title={title}
-            column={column}
-            headingColor={colors[index]}
-            cards={cards}
-            setCards={setCards}
-          />
-        );
-      })}
+      {["Backlog", "TODO", "In Progress", "Revision", "Completed"].map(
+        (title, index) => {
+          const column = ["backlog", "todo", "doing", "done"][index];
+          const colors = [
+            "text-neutral-500",
+            "text-yellow-200",
+            "text-blue-200",
+            "text-gray-200",
+            "text-emerald-200",
+          ];
+          return (
+            <Column
+              key={column}
+              title={title}
+              column={column}
+              headingColor={colors[index]}
+              cards={cards}
+              setCards={setCards}
+            />
+          );
+        }
+      )}
       <BurnBarrel setCards={setCards} />
     </div>
   );
